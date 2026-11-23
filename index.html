@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>면접 연습</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --orange: #F57C00;
+    --orange-dark: #E65100;
+    --orange-light: #FFF3E0;
+    --orange-mid: #FFCC80;
+    --text: #111111;
+    --sub: #444444;
+    --red: #D32F2F;
+    --blue: #1565C0;
+    --green: #2E7D32;
+    --white: #FFFFFF;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    font-family: "Noto Sans KR", "Malgun Gothic", sans-serif;
+    background: var(--white);
+    color: var(--text);
+    font-size: 22px;
+    line-height: 1.6;
+    word-break: keep-all;
+  }
+  .screen { display: none; min-height: 100vh; flex-direction: column; }
+  .screen.active { display: flex; }
+
+  /* 공통 상단바 */
+  .topbar {
+    background: var(--orange);
+    color: var(--white);
+    padding: 16px 32px;
+    display: flex; align-items: center; justify-content: space-between;
+    font-weight: 700; font-size: 24px;
+  }
+  .topbar .progress-text { font-size: 22px; }
+
+  .btn {
+    font-family: inherit; font-weight: 700;
+    border: none; cursor: pointer; border-radius: 16px;
+    transition: transform .1s, background .2s, box-shadow .2s;
+  }
+  .btn:active { transform: scale(.97); }
+  .btn-primary {
+    background: var(--orange); color: var(--white);
+    font-size: 28px; padding: 18px 56px;
+    box-shadow: 0 6px 0 var(--orange-dark);
+  }
+  .btn-primary:hover { background: var(--orange-dark); }
+  .btn-primary:disabled {
+    background: #CCCCCC; box-shadow: 0 6px 0 #AAAAAA; cursor: not-allowed;
+  }
+  .btn-outline {
+    background: var(--white); color: var(--orange-dark);
+    border: 3px solid var(--orange); font-size: 20px; padding: 10px 24px;
+  }
+  .btn-outline:hover { background: var(--orange-light); }
+  .btn-small {
+    background: transparent; color: var(--white);
+    border: 2px solid var(--white); font-size: 18px; padding: 6px 16px; border-radius: 10px;
+  }
+  .btn-small:hover { background: rgba(255,255,255,.2); }
+
+  /* ===== 시작 화면 ===== */
+  #start {
+    align-items: center; justify-content: center; text-align: center;
+    background: linear-gradient(180deg, var(--white) 0%, var(--orange-light) 100%);
+    padding: 32px;
+  }
+  .start-badge {
+    display: inline-block; background: var(--orange); color: var(--white);
+    font-weight: 700; font-size: 22px; padding: 6px 24px; border-radius: 999px;
+    margin-bottom: 20px;
+  }
+  #start h1 { font-size: 64px; font-weight: 900; margin-bottom: 16px; }
+  #start h1 span { color: var(--orange); }
+  .start-desc { font-size: 24px; color: var(--sub); margin-bottom: 40px; }
+  .start-rules {
+    background: var(--white); border: 3px solid var(--orange-mid); border-radius: 20px;
+    padding: 24px 36px; margin-bottom: 44px; text-align: left; max-width: 640px; width: 100%;
+  }
+  .start-rules li { list-style: none; font-size: 22px; padding: 6px 0; }
+  .start-rules b { color: var(--orange-dark); }
+  .start-rules .em-red { color: var(--red); font-weight: 700; }
+
+  /* ===== 문제 화면 ===== */
+  .split { flex: 1; display: flex; gap: 0; }
+  .panel { flex: 1; padding: 40px; display: flex; flex-direction: column; }
+  .panel-left { background: var(--orange-light); border-right: 4px solid var(--orange-mid); }
+  .panel-label {
+    display: inline-block; align-self: flex-start;
+    background: var(--orange); color: var(--white); font-weight: 700;
+    font-size: 20px; padding: 4px 18px; border-radius: 999px; margin-bottom: 24px;
+  }
+  .question-num { font-size: 28px; font-weight: 900; color: var(--orange-dark); margin-bottom: 12px; }
+  .question-text { font-size: 38px; font-weight: 700; line-height: 1.5; flex: 1; display: flex; align-items: center; }
+
+  .panel-right { align-items: center; justify-content: center; text-align: center; }
+  .timer-wrap { position: relative; width: 300px; height: 300px; margin-bottom: 24px; }
+  .timer-wrap svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+  .ring-bg { fill: none; stroke: #EEEEEE; stroke-width: 18; }
+  .ring-fg { fill: none; stroke: var(--orange); stroke-width: 18; stroke-linecap: round; transition: stroke-dashoffset 1s linear, stroke .3s; }
+  .ring-fg.warn { stroke: var(--red); }
+  .timer-num {
+    position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+    font-size: 72px; font-weight: 900; font-variant-numeric: tabular-nums;
+  }
+  .timer-num.warn { color: var(--red); }
+  .timer-msg { font-size: 26px; font-weight: 700; color: var(--blue); margin-bottom: 20px; }
+  .timer-actions { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
+
+  .answer-box { width: 100%; display: none; flex-direction: column; align-items: stretch; text-align: left; }
+  .answer-box.show { display: flex; animation: fadeIn .4s ease; }
+  .answer-title { font-size: 26px; font-weight: 900; color: var(--blue); margin-bottom: 12px; }
+  .answer-text {
+    background: var(--white); border: 3px solid var(--blue); border-radius: 20px;
+    padding: 28px 32px; font-size: 26px; line-height: 1.75;
+  }
+  .answer-tip {
+    margin-top: 18px; font-size: 21px; color: var(--sub);
+    background: #FFF8E1; border-left: 6px solid var(--orange); padding: 12px 18px; border-radius: 8px;
+  }
+  .answer-tip b { color: var(--red); }
+
+  .bottombar {
+    border-top: 4px solid var(--orange-mid); padding: 20px 32px;
+    display: flex; justify-content: center; align-items: center; background: var(--white);
+  }
+
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+
+  /* ===== 체크리스트 화면 ===== */
+  .check-body { flex: 1; padding: 40px 24px; display: flex; flex-direction: column; align-items: center; }
+  .check-body h2 { font-size: 44px; font-weight: 900; margin-bottom: 8px; }
+  .check-body h2 span { color: var(--orange); }
+  .check-sub { font-size: 22px; color: var(--sub); margin-bottom: 32px; }
+  .check-list { width: 100%; max-width: 900px; display: flex; flex-direction: column; gap: 24px; }
+  .check-item {
+    border: 3px solid var(--orange-mid); border-radius: 20px; padding: 24px 28px; background: var(--white);
+  }
+  .check-item h3 { font-size: 28px; font-weight: 900; margin-bottom: 4px; }
+  .check-item h3 .icon { margin-right: 8px; }
+  .check-item p { font-size: 20px; color: var(--sub); margin-bottom: 16px; }
+  .rate-group { display: flex; gap: 12px; flex-wrap: wrap; }
+  .rate-group input { display: none; }
+  .rate-group label {
+    flex: 1; min-width: 160px; text-align: center; cursor: pointer;
+    border: 3px solid #DDDDDD; border-radius: 14px; padding: 14px 8px;
+    font-size: 22px; font-weight: 700; transition: all .15s;
+  }
+  .rate-group label .face { display: block; font-size: 40px; line-height: 1.2; }
+  .rate-group label:hover { border-color: var(--orange); }
+  .rate-group input:checked + label.good { border-color: var(--blue); background: #E3F2FD; color: var(--blue); }
+  .rate-group input:checked + label.soso { border-color: var(--orange); background: var(--orange-light); color: var(--orange-dark); }
+  .rate-group input:checked + label.bad  { border-color: var(--red); background: #FFEBEE; color: var(--red); }
+
+  .memo {
+    width: 100%; max-width: 900px; margin-top: 24px;
+  }
+  .memo label { font-size: 24px; font-weight: 700; display: block; margin-bottom: 8px; }
+  .memo textarea {
+    width: 100%; min-height: 110px; font-family: inherit; font-size: 22px;
+    border: 3px solid var(--orange-mid); border-radius: 16px; padding: 14px 18px; resize: vertical;
+  }
+  .memo textarea:focus { outline: none; border-color: var(--orange); }
+
+  .result {
+    display: none; width: 100%; max-width: 900px; margin-top: 28px;
+    background: var(--orange-light); border: 3px solid var(--orange); border-radius: 20px;
+    padding: 24px 28px; text-align: center;
+  }
+  .result.show { display: block; animation: fadeIn .4s ease; }
+  .result .score { font-size: 40px; font-weight: 900; color: var(--orange-dark); }
+  .result .msg { font-size: 24px; margin-top: 8px; }
+  .check-actions { display: flex; gap: 16px; margin-top: 32px; flex-wrap: wrap; justify-content: center; }
+  .warn-text { color: var(--red); font-weight: 700; font-size: 20px; margin-top: 12px; min-height: 30px; }
+
+  /* 반응형 */
+  @media (max-width: 900px) {
+    body { font-size: 19px; }
+    .split { flex-direction: column; }
+    .panel { padding: 24px 16px; }
+    .panel-left { border-right: none; border-bottom: 4px solid var(--orange-mid); }
+    .question-text { font-size: 28px; }
+    .timer-wrap { width: 220px; height: 220px; }
+    .timer-num { font-size: 54px; }
+    .answer-text { font-size: 22px; padding: 20px; }
+    #start h1 { font-size: 44px; }
+    .topbar { padding: 12px 16px; font-size: 20px; }
+    .btn-primary { font-size: 24px; padding: 14px 40px; }
+    .check-body h2 { font-size: 34px; }
+  }
+
+  @media print {
+    .topbar, .check-actions, .warn-text { display: none !important; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ===================== 1. 시작 화면 ===================== -->
+<section id="start" class="screen active">
+  <div class="start-badge">희망별숲</div>
+  <h1>면접 <span>연습</span></h1>
+  <p class="start-desc">실제 면접처럼 질문에 소리 내어 대답해 보세요.</p>
+  <ul class="start-rules">
+    <li>① 왼쪽에 <b>질문</b>이 랜덤으로 나와요.</li>
+    <li>② 오른쪽 시계가 <b class="em-red">1분 30초</b> 동안 움직여요.</li>
+    <li>③ 시간이 끝나면 <b>예시 답변</b>을 확인해요.</li>
+    <li>④ 모든 질문이 끝나면 <b>스스로 평가</b>해요.</li>
+  </ul>
+  <button class="btn btn-primary" id="startBtn">START ▶</button>
+</section>
+
+<!-- ===================== 2. 문제 화면 ===================== -->
+<section id="quiz" class="screen">
+  <div class="topbar">
+    <span>🎤 면접 연습</span>
+    <span class="progress-text" id="progressText">1 / 19</span>
+    <button class="btn btn-small" id="quitBtn">그만하고 평가하기</button>
+  </div>
+
+  <div class="split">
+    <!-- 왼쪽 : 질문 -->
+    <div class="panel panel-left">
+      <span class="panel-label">질문</span>
+      <div class="question-num" id="questionNum">Q1.</div>
+      <div class="question-text" id="questionText"></div>
+    </div>
+
+    <!-- 오른쪽 : 타이머 / 예시 답변 -->
+    <div class="panel panel-right">
+      <div id="timerArea">
+        <div class="timer-wrap">
+          <svg viewBox="0 0 200 200">
+            <circle class="ring-bg" cx="100" cy="100" r="88"></circle>
+            <circle class="ring-fg" id="ring" cx="100" cy="100" r="88"></circle>
+          </svg>
+          <div class="timer-num" id="timerNum">1:30</div>
+        </div>
+        <div class="timer-msg" id="timerMsg">지금 대답해 보세요!</div>
+        <div class="timer-actions">
+          <button class="btn btn-outline" id="pauseBtn">⏸ 일시정지</button>
+          <button class="btn btn-outline" id="doneBtn">✔ 대답 끝</button>
+        </div>
+      </div>
+
+      <div class="answer-box" id="answerBox">
+        <div class="answer-title">💡 예시 답변</div>
+        <div class="answer-text" id="answerText"></div>
+        <div class="answer-tip" id="answerTip"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="bottombar">
+    <button class="btn btn-primary" id="nextBtn" disabled>다음 ▶</button>
+  </div>
+</section>
+
+<!-- ===================== 3. 체크리스트 화면 ===================== -->
+<section id="check" class="screen">
+  <div class="topbar">
+    <span>📝 스스로 평가하기</span>
+    <span class="progress-text" id="doneCount"></span>
+    <span></span>
+  </div>
+
+  <div class="check-body">
+    <h2>수고했어요! <span>스스로 평가</span>해 볼까요?</h2>
+    <p class="check-sub">오늘 나의 면접 모습을 떠올리며 하나씩 골라 보세요.</p>
+
+    <div class="check-list" id="checkList"></div>
+
+    <div class="memo">
+      <label for="memoText">✏️ 다음에 더 잘하고 싶은 점</label>
+      <textarea id="memoText" placeholder="예) 질문을 끝까지 듣고 천천히 대답하기"></textarea>
+    </div>
+
+    <div class="warn-text" id="warnText"></div>
+
+    <div class="result" id="result">
+      <div class="score" id="scoreText"></div>
+      <div class="msg" id="scoreMsg"></div>
+    </div>
+
+    <div class="check-actions">
+      <button class="btn btn-primary" id="resultBtn">결과 보기</button>
+      <button class="btn btn-outline" id="printBtn">🖨 인쇄하기</button>
+      <button class="btn btn-outline" id="restartBtn">↺ 처음부터 다시</button>
+    </div>
+  </div>
+</section>
+
+<script>
+/* ==========================================================
+   질문 & 예시 답변 데이터
+   - q   : 질문
+   - a   : 예시 답변
+   - tip : 답변 요령 (빨간 글씨 <b> 강조 가능)
+   질문을 추가/수정하려면 이 배열만 고치면 됩니다.
+   ========================================================== */
+const QUESTIONS = [
+  { q: "회사 출근시간은 오전 9시입니다. 몇 시까지 출근하며, 무엇을 준비하시겠습니까?",
+    a: "저는 오전 8시 30분까지 출근하겠습니다. 전날 밤에 입을 옷과 가방을 미리 챙겨 두고, 아침에는 씻고 밥을 먹은 뒤 일찍 출발하겠습니다. 회사에 도착하면 작업복으로 갈아입고 오늘 할 일을 확인하겠습니다.",
+    tip: "출근 시간보다 <b>10~30분 일찍</b> 도착한다고 말하고, 도착해서 어떤 업무를 준비할지 구체적으로 대답합니다.." },
+  { q: "직장 동료 2명이 나에 대한 험담을 하는 것을 듣게 되었다면 어떻게 하시겠습니까?",
+    a: "먼저 화를 내지 않고 마음을 진정하겠습니다. 그리고 제가 잘못한 점이 있는지 생각해 보겠습니다. 오해가 있다면 나중에 조용히 동료에게 이야기해서 풀고, 해결이 어려우면 상사께 도움을 요청하겠습니다.",
+    tip: "<b>화내지 않기 → 내 행동 돌아보기 → 대화로 풀기</b> 순서로 말합니다." },
+  { q: "직장 동료끼리 싸우고 있는 것을 목격했다면 어떻게 하시겠습니까?",
+    a: "제가 직접 끼어들면 더 커질 수 있으니, 바로 상사나 담당 선생님께 알리겠습니다. 다치는 사람이 생길 것 같으면 주변 사람들에게 도움을 요청하겠습니다.",
+    tip: "혼자 해결하려 하지 말고 <b>상사에게 알린다</b>는 점이 중요합니다." },
+  { q: "아침에 일어났는데 몸이 너무 아프다면 어떻게 하시겠습니까? (또는 지각, 월차 등 포함)",
+    a: "출근 시간 전에 상사께 직접 전화를 드려서 몸이 아프다고 말씀드리겠습니다. 그리고 병원에 가서 진료를 받겠습니다. 지각할 것 같을 때도 미리 연락드리고, 쉬어야 할 때는 정해진 방법으로 월차를 신청하겠습니다.",
+    tip: "<b>출근 시간 전에, 직접 전화로</b> 연락한다고 꼭 말합니다. 전날 하지 못한 업무를 다음날 해결합니다." },
+  { q: "어떤 경우에 화가 나며, 어떻게 화를 푸는지 말씀해 주세요.",
+    a: "저는 약속을 지키지 않을 때 조금 화가 납니다. 화가 나면 잠깐 숨을 크게 쉬고 물을 마시며 마음을 가라앉힙니다. 퇴근 후에는 좋아하는 음악을 듣거나 산책을 하면서 기분을 풉니다.",
+    tip: "화를 <b>건강하게 푸는 방법</b>(산책, 음악, 운동 등)을 함께 말합니다." },
+  { q: "5시 퇴근인데 작업을 다 하지 못한 경우 어떻게 하시겠습니까?",
+    a: "먼저 상사께 작업을 다 하지 못했다고 말씀드리겠습니다. 그리고 남아서 마무리할지, 내일 이어서 할지 상사의 지시에 따르겠습니다. 다음부터는 시간을 잘 확인하면서 일하겠습니다.",
+    tip: "혼자 결정하지 않고 <b>상사에게 보고하고 지시에 따른다</b>고 말합니다." },
+  { q: "상사의 지시사항을 잘 이해하지 못한 경우 어떻게 하시겠습니까?",
+    a: "\"죄송하지만 다시 한 번 설명해 주시겠습니까?\" 하고 공손하게 여쭤보겠습니다. 중요한 내용은 메모를 하고, 제가 이해한 내용이 맞는지 다시 확인하겠습니다.",
+    tip: "모르는 것을 <b>공손하게 다시 묻는 것</b>은 좋은 태도입니다. 질문을 두려워하지 않습니다." },
+  { q: "우리 회사는 계속 서서 일을 해야 하고 무거운 재료도 옮겨야 하는데 할 수 있습니까?",
+    a: "네, 할 수 있습니다. 평소에 꾸준히 걷기 운동을 해서 체력에 자신이 있습니다. 무거운 물건은 안전하게 드는 방법을 배워서 다치지 않게 조심하며 일하겠습니다.",
+    tip: "<b>\"네, 할 수 있습니다\"</b>로 시작하고 이유를 덧붙여요. 체력 유지에 대한 방법도 같이 이야기하면 좋습니다." },
+  { q: "우리 회사에 지원하게 된 지원 동기는 무엇입니까?",
+    a: "저는 꼼꼼하게 일하는 것을 좋아하고, 이 회사에서 하는 일이 제 장점과 잘 맞는다고 생각했습니다. 이곳에서 열심히 배우고 오래 일하면서 회사에 꼭 필요한 사람이 되고 싶어서 지원하게 되었습니다.",
+    tip: "<b>회사가 하는 일 + 나의 장점</b>을 연결해서 말합니다. 장점에 대한 구체적인 근거를 제시합니다." },
+  { q: "오늘 여기에 왜 왔나요? (또는 우리 회사 이름과 하는 일이 무엇인지 아는가?)",
+    a: "오늘 ○○회사에 면접을 보러 왔습니다. ○○회사는 ○○을/를 만드는(하는) 회사로 알고 있습니다. 이 회사에서 꼭 일하고 싶어서 열심히 준비했습니다.",
+    tip: "<b>회사 이름과 하는 일</b>을 미리 외워서 ○○ 자리에 넣어 말해요.(회사에 대해 얼마나 관심있는지 질문)" },
+  { q: "자신의 장점과 단점을 얘기해 보세요. (또는 자신의 성격을 말해보세요.)",
+    a: "제 장점은 성실하고 맡은 일을 끝까지 하는 것입니다. 학교에서도 지각 없이 꾸준히 출석했습니다. 단점은 조금 긴장을 잘 하는 것인데, 미리 연습하고 준비하면서 고쳐 나가고 있습니다.",
+    tip: "단점을 말할 때는 <b>고치려고 노력하는 방법</b>도 함께 말합니다." },
+  { q: "취미와 특기가 무엇입니까?",
+    a: "제 취미는 음악 듣기와 산책입니다. 쉬는 날에는 공원을 걸으며 음악을 듣습니다. 특기는 정리정돈으로, 물건을 깔끔하게 정리하는 것을 잘합니다.",
+    tip: "특기는 <b>일과 관련 있는 것</b>(정리, 청소, 꼼꼼함 등)이면 더 좋습니다." },
+  { q: "집에서 학교까지 등교 소요 시간과 등굣길을 자세하게 설명해 보세요.",
+    a: "집에서 학교까지는 약 30분이 걸립니다. 집에서 나와 5분 정도 걸어서 ○○ 정류장에서 ○번 버스를 탑니다. 약 20분 뒤 ○○ 정류장에서 내려서 5분 정도 걸으면 학교에 도착합니다.",
+    tip: "<b>걸리는 시간 → 교통수단 → 순서대로 길 설명</b>을 합니다." },
+  { q: "혼자서 가장 멀리 가 본 장소는 어디입니까?",
+    a: "저는 혼자서 지하철을 타고 ○○까지 가 본 적이 있습니다. 미리 노선을 확인하고 갈아타는 역을 메모해서 찾아갔습니다. 혼자서도 길을 잘 찾을 수 있다는 자신감이 생겼습니다.",
+    tip: "<b>혼자서도 이동(출근)할 수 있다</b>는 점을 보여 주는 질문입니다." },
+  { q: "주말에 주로 무엇을 하며 시간을 보냅니까?",
+    a: "주말에는 집 청소를 돕고, 가족과 함께 시장이나 공원에 갑니다. 오후에는 운동을 하거나 좋아하는 영화를 보며 쉽니다.",
+    tip: "<b>규칙적이고 건강한 생활</b>을 하는 모습을 보여 주면 좋습니다." },
+  { q: "무엇을 할 때 가장 행복한가요? (또는 학교에서 가장 좋아하는 과목은?)",
+    a: "저는 맡은 일을 끝까지 해냈을 때 가장 행복합니다. 학교에서는 직업 수업을 가장 좋아하는데, 직접 몸으로 해 보면서 배우는 것이 재미있기 때문입니다.",
+    tip: "좋아하는 이유를 <b>\"왜냐하면 ~ 때문입니다\"</b>로 덧붙여요." },
+  { q: "첫 월급으로 가장 먼저 하고 싶은 것이 무엇인가요?",
+    a: "첫 월급을 받으면 먼저 부모님께 감사의 마음을 담아 선물을 드리고 싶습니다. 그리고 남은 돈은 조금씩 저축해서 미래를 준비하겠습니다.",
+    tip: "<b>감사 + 저축 계획</b>을 함께 말하면 좋은 인상을 줘요." },
+  { q: "가장 행복했었던 적은 언제인가요?",
+    a: "현장실습에서 처음으로 칭찬을 받았을 때 가장 행복했습니다. 열심히 노력한 것을 인정받아서 뿌듯했고, 앞으로 더 열심히 일하고 싶다는 생각이 들었습니다.",
+    tip: "<b>언제 → 무슨 일 → 그때 기분</b> 순서로 말해요." }
+];
+
+/* 체크리스트 항목 */
+const CHECKS = [
+  { id: "voice", icon: "🔊", title: "목소리 크기", desc: "면접관이 잘 들을 수 있도록 또박또박, 알맞은 크기로 말하였는가?" },
+  { id: "eye",   icon: "👀", title: "시선",       desc: "고개를 숙이지 않고 면접관의 눈(얼굴)을 바라보며 말하였는가?" },
+  { id: "build", icon: "🧩", title: "답변의 구성", desc: "질문에 맞게 대답하고, 이유나 예시를 들어 끝까지 말하였는가?" }
+];
+
+/* ========================================================== */
+const TIME_LIMIT = 90;            // 1분 30초
+const CIRC = 2 * Math.PI * 88;    // 원 둘레
+
+let order = [], idx = 0, remain = TIME_LIMIT, timerId = null, paused = false;
+
+const $ = id => document.getElementById(id);
+const ring = $("ring");
+ring.style.strokeDasharray = CIRC;
+
+function show(screenId) {
+  document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
+  $(screenId).classList.add("active");
+  window.scrollTo(0, 0);
+}
+
+function shuffle(arr) {
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function fmt(sec) {
+  const m = Math.floor(sec / 60), s = sec % 60;
+  return m + ":" + String(s).padStart(2, "0");
+}
+
+/* 알림음 (외부 파일 없이 재생) */
+let audioCtx = null;
+function beep(freq = 880, dur = 0.25, times = 1) {
+  try {
+    audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+    for (let i = 0; i < times; i++) {
+      const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+      o.frequency.value = freq; o.connect(g); g.connect(audioCtx.destination);
+      const t = audioCtx.currentTime + i * (dur + 0.12);
+      g.gain.setValueAtTime(0.25, t);
+      g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+      o.start(t); o.stop(t + dur);
+    }
+  } catch (e) {}
+}
+
+function renderTimer() {
+  $("timerNum").textContent = fmt(remain);
+  ring.style.strokeDashoffset = CIRC * (1 - remain / TIME_LIMIT);
+  const warn = remain <= 10;
+  ring.classList.toggle("warn", warn);
+  $("timerNum").classList.toggle("warn", warn);
+  if (remain <= 10 && remain > 0) {
+    $("timerMsg").textContent = "곧 시간이 종료됩니다! 마무리해 주세요.";
+    $("timerMsg").style.color = "var(--red)";
+  } else {
+    $("timerMsg").textContent = paused ? "일시정지 중" : "지금 대답해 보세요!";
+    $("timerMsg").style.color = "var(--blue)";
+  }
+}
+
+function startTimer() {
+  clearInterval(timerId);
+  remain = TIME_LIMIT; paused = false;
+  $("pauseBtn").textContent = "⏸ 일시정지";
+  ring.style.transition = "none";
+  renderTimer();
+  void ring.offsetWidth;
+  ring.style.transition = "";
+  timerId = setInterval(tick, 1000);
+}
+
+function tick() {
+  if (paused) return;
+  remain--;
+  renderTimer();
+  if (remain === 10) beep(660, 0.15);
+  if (remain <= 0) timeUp();
+}
+
+function timeUp() {
+  clearInterval(timerId);
+  beep(880, 0.3, 2);
+  const item = order[idx];
+  $("timerArea").style.display = "none";
+  $("answerText").textContent = item.a;
+  $("answerTip").innerHTML = "📌 <b>답변 요령</b> : " + item.tip;
+  $("answerBox").classList.add("show");
+  $("nextBtn").disabled = false;
+  $("nextBtn").textContent = (idx === order.length - 1) ? "평가하러 가기 ▶" : "다음 ▶";
+  $("nextBtn").focus();
+}
+
+function loadQuestion() {
+  const item = order[idx];
+  $("progressText").textContent = (idx + 1) + " / " + order.length;
+  $("questionNum").textContent = "Q" + (idx + 1) + ".";
+  $("questionText").textContent = item.q;
+  $("answerBox").classList.remove("show");
+  $("timerArea").style.display = "";
+  $("nextBtn").disabled = true;
+  $("nextBtn").textContent = "다음 ▶";
+  startTimer();
+}
+
+function startQuiz() {
+  order = shuffle(QUESTIONS);
+  idx = 0;
+  show("quiz");
+  loadQuestion();
+}
+
+function goCheck() {
+  clearInterval(timerId);
+  $("doneCount").textContent = "연습한 질문 " + Math.min(idx + 1, order.length) + "개";
+  buildChecklist();
+  show("check");
+}
+
+function buildChecklist() {
+  const opts = [
+    { v: 3, cls: "good", face: "😄", label: "Excellent!!!" },
+    { v: 2, cls: "soso", face: "🙂", label: "Good!" },
+    { v: 1, cls: "bad",  face: "😥", label: "다시 생각해보기" }
+  ];
+  $("checkList").innerHTML = CHECKS.map(c => `
+    <div class="check-item">
+      <h3><span class="icon">${c.icon}</span>${c.title}</h3>
+      <p>${c.desc}</p>
+      <div class="rate-group">
+        ${opts.map(o => `
+          <input type="radio" name="${c.id}" id="${c.id}${o.v}" value="${o.v}">
+          <label for="${c.id}${o.v}" class="${o.cls}"><span class="face">${o.face}</span>${o.label}</label>
+        `).join("")}
+      </div>
+    </div>`).join("");
+  $("memoText").value = "";
+  $("warnText").textContent = "";
+  $("result").classList.remove("show");
+}
+
+function showResult() {
+  let total = 0, low = [];
+  for (const c of CHECKS) {
+    const sel = document.querySelector(`input[name="${c.id}"]:checked`);
+    if (!sel) { $("warnText").textContent = "⚠ 모든 항목을 골라 주세요. (" + c.title + ")"; return; }
+    total += +sel.value;
+    if (+sel.value === 1) low.push(c.title);
+  }
+  $("warnText").textContent = "";
+  const max = CHECKS.length * 3;
+  let msg;
+  if (total >= 8) msg = "🎉 아주 훌륭해요! 실제 면접도 자신 있게 볼 수 있어요.";
+  else if (total >= 6) msg = "👍 잘하고 있어요! 조금만 더 연습하면 완벽해요.";
+  else msg = "💪 괜찮아요! 연습할수록 점점 좋아질 거예요.";
+  if (low.length) msg += "<br><span style='color:var(--red);font-weight:700'>다음에는 「" + low.join(", ") + "」에 더 신경 써 봐요.</span>";
+  $("scoreText").textContent = "나의 점수 : " + total + " / " + max;
+  $("scoreMsg").innerHTML = msg;
+  $("result").classList.add("show");
+  $("result").scrollIntoView({ behavior: "smooth", block: "center" });
+}
+
+/* ===== 이벤트 ===== */
+$("startBtn").onclick = startQuiz;
+$("doneBtn").onclick = () => { remain = 0; renderTimer(); timeUp(); };
+$("pauseBtn").onclick = () => {
+  paused = !paused;
+  $("pauseBtn").textContent = paused ? "▶ 계속하기" : "⏸ 일시정지";
+  renderTimer();
+};
+$("nextBtn").onclick = () => {
+  if (idx < order.length - 1) { idx++; loadQuestion(); }
+  else goCheck();
+};
+$("quitBtn").onclick = () => {
+  if (confirm("연습을 그만하고 스스로 평가하기로 넘어갈까요?")) goCheck();
+};
+$("resultBtn").onclick = showResult;
+$("printBtn").onclick = () => window.print();
+$("restartBtn").onclick = () => show("start");
+</script>
+</body>
+</html>
